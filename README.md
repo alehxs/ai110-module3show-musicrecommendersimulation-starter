@@ -18,16 +18,41 @@ Replace this paragraph with your own summary of what your version does.
 ## How The System Works
 
 Explain your design in plain language.
+- Real-world recommendation systems are almost always a hybrid of content-based and collaboration filtering. 
+
+  Content-based filterting recommends items by computing similarity between attributes and user preferences. The system learns what features a user likes, then finds similar items. No other users involved
+
+  Collaborative Filtering recommends items by computing similarity between users based on their history. Then recommends items liked by similar users, that the user has not yet encountered.
 
 Some prompts to answer:
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
+- What features does each `Song` use in your system (For example: genre, mood, energy, tempo)
+  - Each song has 
+    - Categorical features (```genre```, ```mood```)
+    - Continuous features with numerical values in [0,1] (```energy```, ```valence```, ```danceability```, ```acousticness```)
+    - Continuous features on a raw scale (```tempo_bpm```, measured in beats per minute, ranging from 60–152)
 - What information does your `UserProfile` store
+  - My UserProfile stores 2 strings: favorite_genre and favorite_mood, a target_energy float, and a likes_acoustic bool
+
 - How does your `Recommender` compute a score for each song
+  - For each song, it adds up 4 weighted sub-scores:
+  whether the genre meathes (0.40), whether the mood matches (0.25), how close the song's energy is to the user's target energy (0.25) and wheather the acousticness aligns with the user's preference (0.10). The final score is between 0 and 1.
 - How do you choose which songs to recommend
+  - After every song is scored:
+    - 1. Sort all the songs by score descending (highest match first)
+    - 2. Take the top k (default: 3) from the sorted list.
 
 You can include a simple diagram or bullet list if helpful.
+
+```
+songs.csv  →  load_songs()  →  [Song, Song, ...]
+                                       ↓
+UserProfile  ────────────────→  score(song, user) × 10
+                                       ↓
+                              sort by score (desc)
+                                       ↓
+                              top 3 recommendations
+```
 
 ---
 
