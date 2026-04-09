@@ -35,23 +35,38 @@ Some prompts to answer:
   - My UserProfile stores 2 strings: favorite_genre and favorite_mood, a target_energy float, and a likes_acoustic bool
 
 - How does your `Recommender` compute a score for each song
-  - For each song, it adds up 4 weighted sub-scores:
-  whether the genre meathes (0.40), whether the mood matches (0.25), how close the song's energy is to the user's target energy (0.25) and wheather the acousticness aligns with the user's preference (0.10). The final score is between 0 and 1.
+  - For each song, it adds up 3 weighted sub-scores. The max possible score is 5.0.
 - How do you choose which songs to recommend
   - After every song is scored:
     - 1. Sort all the songs by score descending (highest match first)
-    - 2. Take the top k (default: 3) from the sorted list.
+    - 2. Take the top k (default: 5) from the sorted list.
 
-You can include a simple diagram or bullet list if helpful.
+### Algorithm Recipe
+
+| Signal | Type | Points |
+|---|---|---|
+| Genre match | Binary | +2.0 if `song.genre == favorite_genre`, else 0 |
+| Mood match | Binary | +1.0 if `song.mood == favorite_mood`, else 0 |
+| Energy similarity | Continuous | `2.0 × (1.0 - abs(song.energy - target_energy))` → 0 to 2.0 |
+
+**Max score: 5.0**
+
+Energy was scaled to 0–2.0 (instead of 0–1.0) so it can meaningfully compete with the binary matches. Without this, a perfect genre+mood match with completely wrong energy (3.1 pts) would always beat a genre match with perfect energy (3.0 pts).
+
+### Potential Biases
+
+- **Genre over-dominance** — the +2.0 bonus means the right genre almost always wins, even if energy feels completely wrong. Similar genres (e.g. indie pop vs. pop) get zero credit.
+- **Mood label coarseness** — mood is a coarse human-assigned tag; two "happy" songs can feel very different, and a song with a different label but matching energy might suit the user just as well.
+- **No diversity** — the system always returns the closest matches, never exposing the user to anything outside their stated preferences.
 
 ```
 songs.csv  →  load_songs()  →  [Song, Song, ...]
                                        ↓
-UserProfile  ────────────────→  score(song, user) × 10
+UserProfile  ────────────────→  score(song, user)  [max 5.0]
                                        ↓
                               sort by score (desc)
                                        ↓
-                              top 3 recommendations
+                              top k recommendations
 ```
 
 ---
