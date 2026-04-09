@@ -1,5 +1,8 @@
 from src.recommender import Song, UserProfile, Recommender
 
+def test_canary():
+    assert True
+
 def make_small_recommender() -> Recommender:
     songs = [
         Song(
