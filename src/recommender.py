@@ -38,8 +38,13 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        def score(song: Song) -> float:
+            genre_pts = 2.0 if song.genre == user.favorite_genre else 0.0
+            mood_pts = 1.0 if song.mood == user.favorite_mood else 0.0
+            energy_pts = 2.0 * (1.0 - abs(song.energy - user.target_energy))
+            return genre_pts + mood_pts + energy_pts
+
+        return sorted(self.songs, key=score, reverse=True)[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
         # TODO: Implement explanation logic
@@ -59,6 +64,12 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
-    # TODO: Implement scoring and ranking logic
-    # Expected return format: (song_dict, score, explanation)
-    return []
+    def score(song: Dict) -> float:
+        genre_pts = 2.0 if song["genre"] == user_prefs["favorite_genre"] else 0.0
+        mood_pts = 1.0 if song["mood"] == user_prefs["favorite_mood"] else 0.0
+        energy_pts = 2.0 * (1.0 - abs(song["energy"] - user_prefs["target_energy"]))
+        return genre_pts + mood_pts + energy_pts
+
+    scored = [(song, score(song), "") for song in songs]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:k]
