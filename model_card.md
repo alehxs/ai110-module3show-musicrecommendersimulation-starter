@@ -1,111 +1,77 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: VibeFinder 1.0
 
-## 1. Model Name  
+## 1. Model Name
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
-
----
-
-## 2. Intended Use  
-
-Describe what your recommender is designed to do and who it is for. 
-
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+VibeFinder 1.0
 
 ---
 
-## 3. How the Model Works  
+## 2. Goal / Task
 
-Explain your scoring approach in simple language.  
-
-Prompts:  
-
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
-
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+VibeFinder takes a user's preferred genre, mood, and energy level and returns the top songs from the catalog that best match those preferences. It also explains why each song was recommended in plain English.
 
 ---
 
-## 4. Data  
+## 3. Data Used
 
-Describe the dataset the model uses.  
-
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+The catalog has 20 songs. Each song has a genre, mood, energy level (0 to 1), tempo, valence, danceability, and acousticness. There are 15 different genres but most of them only have one song. Pop has the most with 4 songs. The mood options in the dataset are happy, intense, moody, chill, and relaxed. A lot of moods people might actually want (like sad, angry, or melancholic) are not in the dataset at all.
 
 ---
 
-## 5. Strengths  
+## 4. Algorithm Summary
 
-Where does your system seem to work well  
+Each song gets a score based on three things:
 
-Prompts:  
+- **Genre match:** If the song's genre matches what the user wants, it gets 2 points. If not, 0.
+- **Mood match:** If the mood matches, it gets 1 point. If not, 0.
+- **Energy match:** Songs closer in energy to the user's preference score higher. A perfect energy match gives 2 points, and the score drops gradually the further away it is.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
-
----
-
-## 6. Limitations and Bias 
-
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+The three scores are added together (max possible is 5.0) and the top results are returned.
 
 ---
 
-## 7. Evaluation  
+## 5. Observed Behavior / Biases
 
-How you checked whether the recommender behaved as expected. 
+Genre match is worth 2 points, which makes it the strongest signal by far. This means a song in the right genre with bad energy will often beat a song in the wrong genre with perfect energy and a mood match. That feels wrong for users who care more about mood than genre.
 
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
+The bigger issue is that the system has no way to tell the user when their preference does not exist in the catalog. If someone asks for "sad" or "edm" songs, neither exists in the dataset. The system just skips those preferences and ranks by whatever does match, without any warning. The recommendations still look plausible on the surface, which makes it easy to miss that the system never actually found what was asked for.
 
 ---
 
-## 8. Future Work  
+## 6. Evaluation Process
 
-Ideas for how you would improve the model next.  
+Five adversarial profiles were tested to look for edge cases:
 
-Prompts:  
+1. A user asking for a mood ("sad") that does not exist in the catalog. The system returned pop songs ranked by energy with no warning about the missing mood.
+2. A contradictory profile (intense lofi) where the genre and mood don't usually go together. Results were scattered across genres.
+3. A k=-1 input, which caused Python's slice behavior to return 19 songs instead of erroring.
+4. A folk/relaxed/low-energy user. This one actually worked well because the catalog has a matching folk song with a relaxed mood.
+5. A tie-breaking case with synthwave where two songs had the same score, to see how ordering was handled.
 
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+A weight-shift experiment was also run: genre weight was halved (2.0 to 1.0) and energy weight was doubled (2.0 to 4.0). The Pop Fan list became more diverse in genre, which felt more accurate. The Hype Workout list barely changed because neither the genre nor mood existed in the catalog regardless of weights.
 
 ---
 
-## 9. Personal Reflection  
+## 7. Intended Use and Non-Intended Use
 
-A few sentences about your experience.  
+**Intended use:** This is a classroom simulation for learning how scoring-based recommenders work. It is good for exploring how weight choices affect results and how missing data creates silent failures.
 
-Prompts:  
+**Not intended for:** Real music recommendations, any situation where users expect coverage of their full taste, or anything that needs to scale beyond a small catalog. It should not be used to make product decisions or as an example of a production-ready system.
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+---
+
+## 8. Ideas for Improvement
+
+1. Add a warning when the user's requested genre or mood does not exist in the catalog, instead of silently falling back.
+2. Grow the catalog significantly. With only 1 song per genre for most genres, variety in results is basically impossible for most user types.
+3. Validate that k is a positive integer before slicing, so bad inputs fail clearly instead of returning unexpected results.
+
+---
+
+## 9. Personal Reflection
+
+The biggest thing I learned is how much a weight choice is actually a values decision. Setting genre to 2 points and mood to 1 point sounds like a neutral math choice, but it is really saying the system thinks genre matters twice as much as mood. Nobody wrote that rule intentionally but it shapes every result.
+
+AI tools helped a lot with running experiments quickly and catching edge cases I would not have thought to test on my own, like the k=-1 slice bug. But I had to double-check the explanations because the output always looked reasonable even when the system was clearly not doing what I asked. That is the part that surprised me most: a simple algorithm can return confident-looking results even when it has completely ignored the user's actual preference.
+
+If I kept working on this, the first thing I would do is add more songs so users who like less common genres actually get meaningful recommendations instead of a random energy-ranked list.
