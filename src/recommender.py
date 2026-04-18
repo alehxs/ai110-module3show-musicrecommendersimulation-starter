@@ -55,9 +55,24 @@ def load_songs(csv_path: str) -> List[Dict]:
     Loads songs from a CSV file.
     Required by src/main.py
     """
-    # TODO: Implement CSV loading logic
-    print(f"Loading songs from {csv_path}...")
-    return []
+    import csv
+
+    int_fields = {"id", "tempo_bpm"}
+    float_fields = {"energy", "valence", "danceability", "acousticness", "loudness", "instrumentalness", "speechiness"}
+
+    songs = []
+    with open(csv_path, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            song = {k.strip(): v.strip() for k, v in row.items()}
+            for field in int_fields:
+                if field in song:
+                    song[field] = int(song[field])
+            for field in float_fields:
+                if field in song:
+                    song[field] = float(song[field])
+            songs.append(song)
+    return songs
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
     """
@@ -65,9 +80,9 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Required by src/main.py
     """
     def score(song: Dict) -> float:
-        genre_pts = 2.0 if song["genre"] == user_prefs["favorite_genre"] else 0.0
-        mood_pts = 1.0 if song["mood"] == user_prefs["favorite_mood"] else 0.0
-        energy_pts = 2.0 * (1.0 - abs(song["energy"] - user_prefs["target_energy"]))
+        genre_pts = 2.0 if song["genre"] == user_prefs["genre"] else 0.0
+        mood_pts = 1.0 if song["mood"] == user_prefs["mood"] else 0.0
+        energy_pts = 2.0 * (1.0 - abs(song["energy"] - user_prefs["energy"]))
         return genre_pts + mood_pts + energy_pts
 
     scored = [(song, score(song), "") for song in songs]
